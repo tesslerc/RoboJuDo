@@ -26,6 +26,12 @@ def parse_args():
         default="g1",
         help="Name of the config class to use",
     )
+    parser.add_argument(
+        "--prepare-seconds",
+        type=float,
+        default=None,
+        help="Duration of each prepare phase in seconds (default: 3s ramp + 5s blend)",
+    )
     args = parser.parse_args()
     return args
 
@@ -45,7 +51,7 @@ def main():
     pipeline = pipeline_class(cfg=cfg)
 
     if not cfg.env.is_sim:
-        pipeline.prepare()
+        pipeline.prepare(prepare_seconds=args.prepare_seconds)
 
     while True:
         time_start = time.time()

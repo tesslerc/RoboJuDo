@@ -69,7 +69,7 @@ class g1_real(g1):
         # env_type="UnitreeEnv",  # For unitree_sdk2py
         env_type="UnitreeCppEnv",  # For unitree_cpp, check README for more details
         unitree=G1UnitreeCfg(
-            net_if="eth0",  # note: change to your network interface
+            net_if="eth0",
         ),
     )
 
@@ -179,6 +179,22 @@ class g1_beyondmimic(RlPipelineCfg):
         use_motion_from_model=True,  # use motion from onnx model
         max_timestep=140,
     )
+
+
+@cfg_registry.register
+class g1_beyondmimic_real(g1_beyondmimic):
+    """BeyondMimic Policy on real G1 hardware."""
+
+    env: G1RealEnvCfg = G1RealEnvCfg(
+        env_type="UnitreeCppEnv",
+        unitree=G1UnitreeCfg(
+            net_if="eth0",
+        ),
+    )
+    ctrl: list[UnitreeCtrlCfg] = [
+        UnitreeCtrlCfg(),
+    ]
+    do_safety_check: bool = True
 
 
 @cfg_registry.register
@@ -336,9 +352,6 @@ class g1_switch_beyondmimic(RlMultiPolicyPipelineCfg):
     ]
 
 
-# TIPS: check g1_loco_mimic_cfg.py for more complex examples
-
-
 # ======================== ProtoMotions Tracker ======================== #
 
 
@@ -351,16 +364,29 @@ class g1_protomotions_tracker(RlPipelineCfg):
 
     Usage::
 
-        cd robojudo && python scripts/run_tracker_pipeline.py \\
-            -c g1_protomotions_tracker \\
+        cd robojudo && python scripts/run_pipeline.py -c g1_protomotions_tracker \\
             --onnx-path /path/to/unified_pipeline.onnx \\
             --motion-path /path/to/motion.motion
     """
 
     robot: str = "g1"
-    env: G1MujocoEnvCfg = G1MujocoEnvCfg(born_place_align=False)
+    env: G1MujocoEnvCfg = G1MujocoEnvCfg(
+        born_place_align=False,
+        random_heading=True,
+    )
+    ctrl: list[KeyboardCtrlCfg] = [
+        KeyboardCtrlCfg(
+            triggers={
+                "r": "[MOTION_RESET]",
+                "i": "[SIM_REBORN]",
+                "o": "[SHUTDOWN]",
+                "<": "[MOTION_FADE_IN]",
+                ">": "[MOTION_FADE_OUT]",
+            },
+        ),
+    ]
+
     policy: ProtoMotionsTrackerPolicyCfg = ProtoMotionsTrackerPolicyCfg()
-    ctrl: list[KeyboardCtrlCfg] = [KeyboardCtrlCfg()]
 
 
 @cfg_registry.register
@@ -369,8 +395,7 @@ class g1_protomotions_tracker_real(g1_protomotions_tracker):
 
     Usage::
 
-        cd robojudo && python scripts/run_tracker_pipeline.py \\
-            -c g1_protomotions_tracker_real \\
+        cd robojudo && python scripts/run_pipeline.py -c g1_protomotions_tracker_real \\
             --onnx-path /path/to/unified_pipeline.onnx \\
             --motion-path /path/to/motion.motion
     """
@@ -386,3 +411,6 @@ class g1_protomotions_tracker_real(g1_protomotions_tracker):
         UnitreeCtrlCfg(),
     ]
     do_safety_check: bool = True
+
+
+# TIPS: check g1_loco_mimic_cfg.py for more complex examples
